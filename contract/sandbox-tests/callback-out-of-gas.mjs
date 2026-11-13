@@ -315,6 +315,12 @@ async function main() {
       r.status === "Failure",
   );
 
+  assert.equal(
+    failedContractReceipts.length,
+    1,
+    "Expected exactly one failed contract receipt in the inspected receipt rows",
+  );
+
   const oogPattern = /prepaid gas|out of gas|gas limit|gas burnt|gas burned|gas exceeded|exceeded.*gas|gas.*exceed/i;
 
   // near-workspaces may leave failureMessage null even though the raw

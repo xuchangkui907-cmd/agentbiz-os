@@ -726,7 +726,7 @@ async function performAgentBizChainRefresh() {
              updated_at = NOW()`,
           [CONTRACT_ID, message],
         );
-      } catch (recordError) {
+      } catch {
         // Preserve the original RPC error if recording the failure also fails.
       }
     }
