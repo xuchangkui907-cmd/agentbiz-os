@@ -1,0 +1,44 @@
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.output/
+.vite/
+coverage/
+
+# Local logs and temporary files
+*.log
+.DS_Store
+
+# Local backups
+.agentbiz-*-backup-*/
+.wallet-*/
+.output.before-*/
+*.before-*
+*.backup-*
+*.bak
+
+# Local tool configuration
+.vercel/
+.grok/
+.node_modules.lock
+
+# Private keys and local database files
+*.pem
+*.key
+*.dump
+*.sqlite
+*.sqlite3
+
+contract/target/
+target/
+
+**/target/
+
+*.bak.*

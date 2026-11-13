@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0a0f0a;
+  --color-surface: #111811;
+  --color-surface-2: #1a211a;
+  --color-fg: #e8f0e0;
+  --color-muted: #88998a;
+  --color-primary: #a3e635;
+  --color-primary-ink: #0f1a05;
+  --color-danger: #f87171;
+  --color-ok: #4ade80;
+  --color-border: #253025;
+  --color-chain: #22d3ee;
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --radius: 0.75rem;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html,
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+  }
+
+  body {
+    min-height: 100vh;
+  }
+}
+
+/* AgentBiz role selector: keep native dropdown options readable */
+.agent-role-select {
+  color: #f8fafc;
+  background-color: #1e293b;
+  color-scheme: dark;
+}
+
+.agent-role-select option {
+  color: #f8fafc;
+  background-color: #0f172a;
+}
