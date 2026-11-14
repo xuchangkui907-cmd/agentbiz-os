@@ -252,6 +252,7 @@ function Home() {
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [currentAccount, setCurrentAccount] = useState("stormxu.testnet");
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
+  const [connectedWalletName, setConnectedWalletName] = useState<string | null>(null);
   const [connectedAccounts, setConnectedAccounts] = useState<string[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -725,11 +726,24 @@ function Home() {
     try {
       const walletModule = await import("@/lib/near/wallet");
       const connected = await walletModule.connectWallet();
+      const accountIds =
+        connected.accountIds ||
+        (connected.accountId ? [connected.accountId] : []);
+
       setConnectedWallet(connected.accountId || null);
-      setConnectedAccounts(connected.accountIds || (connected.accountId ? [connected.accountId] : []));
+      setConnectedWalletName(connected.walletName || "NEAR Wallet");
+      setConnectedAccounts(accountIds);
+
+      const roleAvailable = accountIds.includes(currentAccount);
       showNotice(
-        "success",
-        `已连接 ${connected.walletName}: ${(connected.accountIds || [connected.accountId]).join(", ")}`
+        roleAvailable ? "success" : "warning",
+        `钱包：${connected.walletName || "NEAR Wallet"}\n` +
+          `返回账户数量：${accountIds.length}\n` +
+          `账户：${accountIds.join(", ") || "无"}\n` +
+          `当前业务角色：${currentAccount}\n` +
+          (roleAvailable
+            ? "当前角色账户已出现在钱包账户列表中。"
+            : "当前角色账户不在钱包账户列表中，相关交易将被阻止。")
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -889,6 +903,129 @@ function Home() {
           </div>
         </div>
       </nav>
+
+      {/* Persistent Wallet & Role Status */}
+      <div className="border-b border-white/10 bg-[#0d140d]">
+        <div className="mx-auto max-w-7xl px-8 py-5">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <div className="flex flex-wrap items-start justify-between gap-5">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-widest text-lime-400">
+                  Wallet &amp; Role Status
+                </div>
+                <div className="mt-3 text-sm text-white/60">
+                  Selected business role
+                </div>
+                <div className="mt-1 break-all font-mono text-lg text-lime-300">
+                  {ROLE_LABELS[currentAccount] || currentAccount}
+                </div>
+                <div className="mt-3 text-xs text-white/50">
+                  Required signer:{" "}
+                  <span className="break-all font-mono text-white">
+                    {currentAccount}
+                  </span>
+                </div>
+              </div>
+
+              <div className="min-w-[240px] text-sm">
+                <div className="text-xs text-white/50">Connected wallet provider</div>
+                <div className="mt-1 font-medium text-white">
+                  {connectedWalletName || "Not connected"}
+                </div>
+                <div className="mt-3 text-xs text-white/50">Primary connected account</div>
+                <div className="mt-1 break-all font-mono text-white">
+                  {connectedWallet || "Not connected"}
+                </div>
+                <div className="mt-3 text-xs text-white/50">
+                  Wallet account candidates: {connectedAccounts.length}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 border-t border-white/10 pt-4">
+              <div className="mb-3 text-xs font-medium text-white/60">
+                Connected accounts — click an account to select its business role
+              </div>
+
+              {connectedAccounts.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {connectedAccounts.map((accountId) => {
+                    const isBusinessRole = Boolean(ROLE_LABELS[accountId]);
+                    const isSelected = currentAccount === accountId;
+
+                    return isBusinessRole ? (
+                      <button
+                        key={accountId}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => {
+                          setCurrentAccount(accountId);
+                          setRoleMenuOpen(false);
+                        }}
+                        className={`break-all rounded-xl border px-3 py-2 text-left text-xs font-mono transition-colors ${
+                          isSelected
+                            ? "border-lime-400 bg-lime-400/10 text-lime-300"
+                            : "border-white/15 bg-black/30 text-white/70 hover:border-lime-400/60"
+                        }`}
+                      >
+                        {ROLE_LABELS[accountId]}
+                        {isSelected ? "  ✓" : ""}
+                      </button>
+                    ) : (
+                      <span
+                        key={accountId}
+                        title="This wallet account is not configured as an AgentBiz business role"
+                        className="break-all rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs font-mono text-white/40"
+                      >
+                        {accountId} · Not a business role
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-white/15 bg-black/20 p-4 text-sm text-white/40">
+                  No wallet accounts loaded. Click Connect / Switch Wallet to connect a NEAR wallet.
+                </div>
+              )}
+            </div>
+
+            <div
+              className={`mt-4 rounded-xl border p-3 text-sm ${
+                connectedAccounts.includes(currentAccount)
+                  ? "border-lime-400/30 bg-lime-400/5 text-lime-200"
+                  : connectedAccounts.length > 0
+                    ? "border-amber-400/30 bg-amber-400/5 text-amber-200"
+                    : "border-white/10 bg-black/20 text-white/50"
+              }`}
+            >
+              {connectedAccounts.includes(currentAccount) ? (
+                <>
+                  <strong>Wallet account match:</strong> the selected role account appears in the
+                  connected wallet account list. The wallet must still successfully sign each
+                  transaction.
+                </>
+              ) : connectedAccounts.length > 0 ? (
+                <>
+                  <strong>Signer mismatch:</strong> the connected wallet does not expose{" "}
+                  <span className="break-all font-mono">{currentAccount}</span>. Transactions for
+                  this role will be blocked until the correct account is connected.
+                </>
+              ) : (
+                <>
+                  <strong>Wallet not connected:</strong> connect a wallet to check whether it
+                  exposes the account required by the selected role.
+                </>
+              )}
+            </div>
+
+            <p className="mt-3 text-xs text-white/40">
+              Selecting a business role does not grant wallet access. Transactions are signed
+              using the required role account and are blocked if that account is not provided by
+              the connected wallet.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="mx-auto max-w-7xl px-8 py-10">
         {/* ─── Dashboard ─────────────────────────── */}
