@@ -53,11 +53,50 @@ export async function initWallet() {
   return getConnector();
 }
 
-// Explicitly opens the HOT wallet selector and connects the selected wallet.
-export async function connectWallet() {
+// Connect the wallet and ensure the selected business role is authorized.
+// If the existing NEAR CLI connection belongs to another account, disconnect
+// first so the CLI wallet can clear its cached account ID.
+export async function connectWallet(expectedAccountId?: string) {
   const instance = await getConnector();
 
-  console.log("[AgentBiz Wallet] Opening HOT wallet selector");
+  if (expectedAccountId) {
+    let existingWallet: NearWalletBase | null = null;
+    let existingAccountIds: string[] = [];
+
+    try {
+      const connected = await instance.getConnectedWallet();
+      existingWallet = connected.wallet;
+      existingAccountIds = connected.accounts.map(
+        (account) => account.accountId
+      );
+    } catch {
+      // No persisted connector session. Fall back to this module's state.
+      existingWallet = activeWallet;
+      existingAccountIds = activeAccountIds;
+    }
+
+    if (
+      existingWallet &&
+      !existingAccountIds.includes(expectedAccountId)
+    ) {
+      console.log("[AgentBiz Wallet] Role account mismatch; disconnecting:", {
+        connectedAccounts: existingAccountIds,
+        expectedAccountId,
+      });
+
+      await instance.disconnect(existingWallet);
+
+      // The connector also emits wallet:signOut; clear explicitly as well.
+      activeWallet = null;
+      activeAccountId = null;
+      activeAccountIds = [];
+    }
+  }
+
+  console.log("[AgentBiz Wallet] Opening HOT wallet selector", {
+    expectedAccountId: expectedAccountId || null,
+  });
+
   const wallet = await instance.connect();
 
   const accounts = await wallet.getAccounts({ network: NETWORK });
@@ -68,6 +107,14 @@ export async function connectWallet() {
   activeWallet = wallet;
   activeAccountIds = accounts.map((account) => account.accountId);
   activeAccountId = activeAccountIds[0] || null;
+
+  console.log("[AgentBiz Wallet] Connected accounts:", {
+    expectedAccountId: expectedAccountId || null,
+    accountIds: activeAccountIds,
+    expectedAccountAuthorized: expectedAccountId
+      ? activeAccountIds.includes(expectedAccountId)
+      : null,
+  });
 
   return {
     accountId: activeAccountId,

@@ -725,7 +725,7 @@ function Home() {
   async function handleConnectWallet() {
     try {
       const walletModule = await import("@/lib/near/wallet");
-      const connected = await walletModule.connectWallet();
+      const connected = await walletModule.connectWallet(currentAccount);
       const accountIds =
         connected.accountIds ||
         (connected.accountId ? [connected.accountId] : []);
