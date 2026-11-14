@@ -148,7 +148,7 @@ async function main() {
 
   section("3. 验证正式 WASM");
 
-  const wasmPath = resolve("../target/near/agentbiz_treasury.wasm");
+  const wasmPath = resolve("target/near/agentbiz_treasury.wasm");
   const wasm = await readFile(wasmPath);
   const wasmHash = createHash("sha256").update(wasm).digest("hex");
 

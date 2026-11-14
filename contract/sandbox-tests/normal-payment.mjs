@@ -124,7 +124,7 @@ async function main() {
 
   logSection("3. 读取当前正式 WASM");
 
-  const wasmPath = resolve("../target/near/agentbiz_treasury.wasm");
+  const wasmPath = resolve("target/near/agentbiz_treasury.wasm");
   const wasm = await readFile(wasmPath);
 
   const localHash = createHash("sha256").update(wasm).digest("hex");
