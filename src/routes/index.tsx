@@ -252,6 +252,7 @@ function Home() {
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [currentAccount, setCurrentAccount] = useState("stormxu.testnet");
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
+  const [connectedAccounts, setConnectedAccounts] = useState<string[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -413,14 +414,18 @@ function Home() {
 
   // ─── Agent authorize / revoke ────────────────
   async function changeAgentAuthorization(agentId: string, enabled: boolean) {
-    if (!connectedWallet) {
-      showNotice("warning", "请先连接 NEAR Wallet。");
+    if (currentAccount !== knownRoles.owner) {
+      showNotice("warning", "请先在顶部角色菜单切换到 Owner。");
       return;
     }
-    if (!chainOwner || connectedWallet !== chainOwner) {
+    if (!chainOwner) {
+      showNotice("warning", "尚未读取合约 Owner，暂时不能管理 Agent。");
+      return;
+    }
+    if (!connectedAccounts.includes(chainOwner)) {
       showNotice(
         "warning",
-        `只有合约 Owner (${chainOwner || "尚未读取"}) 可以管理 Agent。`
+        `当前钱包未授权 Owner 账户 ${chainOwner}，请连接包含 Owner 密钥的钱包。`
       );
       return;
     }
@@ -454,7 +459,8 @@ function Home() {
           per_order_limit: yocto,
         },
         "100000000000000",
-        "0"
+        "0",
+        knownRoles.owner
       );
 
       if (!result.success) {
@@ -479,6 +485,10 @@ function Home() {
 
   // ─── Create Order ────────────────────────────
   async function createNewOrder() {
+    if (currentAccount !== newOrder.agent) {
+      showNotice("warning", `当前角色是 ${currentAccount}，但订单选择的是 ${newOrder.agent}。请将顶部角色切换为同一个 Agent。`);
+      return;
+    }
     if (!newOrder.amount.trim() || !newOrder.description.trim()) {
       showNotice("warning", "请填写金额与描述");
       return;
@@ -514,7 +524,8 @@ function Home() {
           amount: amountYocto,
         },
         "30000000000000",
-        "0"
+        "0",
+        currentAccount
       );
 
       if (!result.success) {
@@ -564,6 +575,10 @@ function Home() {
 
   // ─── Supplier: Submit Delivery ───────────────
   async function submitDelivery() {
+    if (currentAccount !== knownRoles.supplier) {
+      showNotice("warning", "请先在顶部角色菜单切换到 Supplier。");
+      return;
+    }
     if (!delivery.orderId || !delivery.hash) {
       showNotice("warning", "请填写 Order ID 和 SHA-256 Hash");
       return;
@@ -572,10 +587,16 @@ function Home() {
     setSubmitting(true);
     try {
       const walletModule = await import("@/lib/near/wallet");
-      const result = await walletModule.signAndSendTransaction("submit_delivery", {
-        order_id: delivery.orderId,
-        sha256_hex: delivery.hash,
-      });
+      const result = await walletModule.signAndSendTransaction(
+        "submit_delivery",
+        {
+          order_id: delivery.orderId,
+          sha256_hex: delivery.hash,
+        },
+        undefined,
+        undefined,
+        knownRoles.supplier
+      );
 
       if (!result.success) {
         showNotice("error", `交易失败：${result.error || "未知错误"}`);
@@ -603,6 +624,10 @@ function Home() {
 
   // ─── Finance: Approve ────────────────────────
   async function approveDelivery() {
+    if (currentAccount !== knownRoles.finance) {
+      showNotice("warning", "请先在顶部角色菜单切换到 Finance Approver。");
+      return;
+    }
     if (!approval.orderId) {
       showNotice("warning", "请输入 Order ID");
       return;
@@ -616,10 +641,16 @@ function Home() {
         delivery.hash ||
         "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
 
-      const result = await walletModule.signAndSendTransaction("approve_delivery", {
-        order_id: approval.orderId,
-        verified_sha256_hex: hashToUse,
-      });
+      const result = await walletModule.signAndSendTransaction(
+        "approve_delivery",
+        {
+          order_id: approval.orderId,
+          verified_sha256_hex: hashToUse,
+        },
+        undefined,
+        undefined,
+        knownRoles.finance
+      );
 
       if (!result.success) {
         showNotice("error", `审批失败：${result.error || "未知错误"}`);
@@ -646,6 +677,10 @@ function Home() {
 
   // ─── Finance: Release ────────────────────────
   async function releaseFunds() {
+    if (currentAccount !== knownRoles.finance) {
+      showNotice("warning", "请先在顶部角色菜单切换到 Finance Approver。");
+      return;
+    }
     if (!approval.orderId) {
       showNotice("warning", "请输入 Order ID");
       return;
@@ -654,9 +689,13 @@ function Home() {
     setSubmitting(true);
     try {
       const walletModule = await import("@/lib/near/wallet");
-      const result = await walletModule.signAndSendTransaction("release", {
-        order_id: approval.orderId,
-      });
+      const result = await walletModule.signAndSendTransaction(
+        "release",
+        { order_id: approval.orderId },
+        undefined,
+        undefined,
+        knownRoles.finance
+      );
 
       if (!result.success) {
         showNotice("error", `释放失败：${result.error || "未知错误"}`);
@@ -686,11 +725,11 @@ function Home() {
     try {
       const walletModule = await import("@/lib/near/wallet");
       const connected = await walletModule.connectWallet();
-      setCurrentAccount(connected.accountId || currentAccount);
       setConnectedWallet(connected.accountId || null);
+      setConnectedAccounts(connected.accountIds || (connected.accountId ? [connected.accountId] : []));
       showNotice(
         "success",
-        `已连接 ${connected.walletName}: ${connected.accountId}`
+        `已连接 ${connected.walletName}: ${(connected.accountIds || [connected.accountId]).join(", ")}`
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -1045,10 +1084,10 @@ function Home() {
                 {chainOwner || "Loading owner..."}
               </div>
               <div className="mt-3 text-xs text-white/50">
-                Connected wallet: {connectedWallet || "Not connected"}
+                Connected wallet: {connectedAccounts.join(", ") || connectedWallet || "Not connected"}
               </div>
               <div className="mt-2 text-xs">
-                {connectedWallet && chainOwner && connectedWallet === chainOwner ? (
+                {connectedAccounts.includes(chainOwner || "") ? (
                   <span className="text-lime-400">
                     Owner wallet verified · Write access available
                   </span>
@@ -1067,9 +1106,7 @@ function Home() {
                 const isFinance = agent.account_id === knownRoles.finance;
                 const isOwner = agent.account_id === chainOwner;
                 const canManage = Boolean(
-                  connectedWallet &&
-                    chainOwner &&
-                    connectedWallet === chainOwner &&
+                  connectedAccounts.includes(chainOwner || "") &&
                     !isFinance &&
                     !isOwner &&
                     chain?.accountExists === true

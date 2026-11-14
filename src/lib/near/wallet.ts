@@ -7,6 +7,7 @@ const CONTRACT_ID = "agentbiz.stormxu.testnet";
 let connector: NearConnector | null = null;
 let activeWallet: NearWalletBase | null = null;
 let activeAccountId: string | null = null;
+let activeAccountIds: string[] = [];
 
 async function getConnector(): Promise<NearConnector> {
   if (connector) return connector;
@@ -27,7 +28,8 @@ async function getConnector(): Promise<NearConnector> {
   instance.on("wallet:signIn", ({ wallet, accounts, success }) => {
     if (!success || !accounts.length) return;
     activeWallet = wallet;
-    activeAccountId = accounts[0].accountId;
+    activeAccountIds = accounts.map((account) => account.accountId);
+    activeAccountId = activeAccountIds[0] || null;
     console.log("[AgentBiz Wallet] Connected:", {
       wallet: wallet.manifest.name,
       accountId: activeAccountId,
@@ -38,6 +40,7 @@ async function getConnector(): Promise<NearConnector> {
   instance.on("wallet:signOut", () => {
     activeWallet = null;
     activeAccountId = null;
+    activeAccountIds = [];
     console.log("[AgentBiz Wallet] Disconnected");
   });
 
@@ -63,10 +66,12 @@ export async function connectWallet() {
   }
 
   activeWallet = wallet;
-  activeAccountId = accounts[0].accountId;
+  activeAccountIds = accounts.map((account) => account.accountId);
+  activeAccountId = activeAccountIds[0] || null;
 
   return {
     accountId: activeAccountId,
+    accountIds: activeAccountIds,
     walletName: wallet.manifest.name,
   };
 }
@@ -83,6 +88,7 @@ export async function getAccountId(): Promise<string> {
   }
 
   activeWallet = connected.wallet;
+  activeAccountIds = connected.accounts.map((item) => item.accountId);
   activeAccountId = account.accountId;
   return activeAccountId;
 }
@@ -91,7 +97,8 @@ export async function signAndSendTransaction(
   methodName: string,
   args: any,
   gas = "30000000000000",
-  deposit = "0"
+  deposit = "0",
+  requestedSignerId?: string
 ) {
   try {
     const instance = await getConnector();
@@ -102,7 +109,8 @@ export async function signAndSendTransaction(
     if (!wallet || !accountId) {
       const connected = await instance.getConnectedWallet();
       wallet = connected.wallet;
-      accountId = connected.accounts[0]?.accountId ?? null;
+      activeAccountIds = connected.accounts.map((item) => item.accountId);
+      accountId = activeAccountIds[0] ?? null;
       activeWallet = wallet;
       activeAccountId = accountId;
     }
@@ -114,16 +122,24 @@ export async function signAndSendTransaction(
       };
     }
 
+    const signerId = requestedSignerId || accountId;
+    if (!signerId || !activeAccountIds.includes(signerId)) {
+      return {
+        success: false,
+        error: `当前钱包没有授权账户 ${signerId || "(unknown)"}。已连接账户：${activeAccountIds.join(", ") || "无"}。请连接包含该角色账户的钱包；为防止错误签名，交易已阻止。`,
+      };
+    }
+
     console.log("[AgentBiz Wallet] Sending transaction:", {
       methodName,
-      signerId: accountId,
+      signerId,
       receiverId: CONTRACT_ID,
       network: NETWORK,
     });
 
     const result = await wallet.signAndSendTransaction({
       network: NETWORK,
-      signerId: accountId,
+      signerId,
       receiverId: CONTRACT_ID,
       actions: [
         {
