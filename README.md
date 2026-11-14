@@ -4,61 +4,82 @@
 
 **Let AI Run the Business. Let NEAR Govern the Money.**
 
-AgentBiz OS is an on-chain business operating system that coordinates AI agents, business orders, suppliers, treasury operations, and independent financial approvals.
+AgentBiz OS is an AI-agent-oriented business operating system that brings business roles, orders, suppliers, treasury operations, delivery verification, and financial approval into one workflow.
 
-Built on **NEAR Protocol**, AgentBiz OS combines autonomous business workflows with programmable financial controls. Agents can operate within explicitly authorized permissions and spending limits, while the smart contract enforces escrow, delivery verification, and settlement rules.
+Built on **NEAR Protocol**, AgentBiz OS combines coordinated business operations with programmable financial controls. Agents operate within explicitly authorized permissions and spending limits, while the smart contract enforces escrow, delivery verification, approval, and settlement rules.
 
-**Network:** NEAR Testnet
-**Contract:** `agentbiz.stormxu.testnet`
-**Owner:** `stormxu.testnet`
+## Live Project and Demo
 
----
+- **Live Application:** https://agentbiz.verbodesk.com/
+- **X Demo Post:** https://x.com/PeterGrade2131/status/2121568927038005342
+- **Full Demo Video:** Available through the X post.
+- **Network:** NEAR Testnet
+- **Contract:** `agentbiz.stormxu.testnet`
+- **Contract Explorer:** https://testnet.nearblocks.io/address/agentbiz.stormxu.testnet
+
+## Verified NEAR Testnet Transactions
+
+AgentBiz OS has completed an end-to-end business settlement workflow using real NEAR Testnet contract calls.
+
+**Demo Order:** `AGENTBIZ-AI-13dbb808-42f4-498d-9c12-8e694913e3f6`
+
+**Escrow Amount:** 0.01 NEAR
+
+**Delivery SHA-256:**
+`407817cbcfb8f8e909a56073b7d97ffdd39d437a0f40bac1643fa611c97f0b31`
+
+| Workflow | Contract Method | Confirmed Transaction |
+|---|---|---|
+| Create escrow | `create_escrow` | [View transaction](https://explorer.testnet.near.org/transactions/C9k3FxA1NMhcfUyUyk7eMAtaHyoNhrMeszgT9uzqUfDH) |
+| Submit delivery | `submit_delivery` | [View transaction](https://explorer.testnet.near.org/transactions/D5ynNWRFMDcCdJbnQgbpZc7yc2sEj3G2bpeSnsiK7vWn) |
+| Approve delivery | `approve_delivery` | [View transaction](https://explorer.testnet.near.org/transactions/Cm58xajxWAS5UhhMFNaxiAPegUZhJVf56RXqyKCuJKb9) |
+| Release escrow | `release` | [View transaction](https://explorer.testnet.near.org/transactions/565dNt2YHFo6C69T59KSsNqXSCb85MGMaUJaEb3BcgNb) |
+
+The final dashboard showed the order as **Released**, locked escrow at **0.0000 NEAR**, and **0 active orders** for the completed workflow.
+
+**Transaction signing:** The demonstrated business-role transactions were signed by their designated NEAR accounts and submitted using NEAR CLI. The browser wallet connection is a separate integration. These transactions are not represented as browser-wallet-signed transactions.
+
+## Business Roles
+
+1. **Owner** — Oversees the business, manages agent and finance permissions, and monitors treasury operations.
+2. **AI Agent** — Coordinates business tasks and initiates authorized orders.
+3. **Supplier** — Fulfills assigned orders and submits delivery evidence with SHA-256 verification.
+4. **Finance** — Independently verifies delivery evidence, approves results, and initiates escrow release.
+
+The separation of these roles helps prevent a single participant from controlling the entire procurement and payment process.
 
 ## Core Capabilities
 
-### 1. Multi-Agent Management
-
-Manage a coordinated AI agent cluster from a unified business dashboard.
+### Multi-Agent Management
 
 - Register and manage agent permissions.
 - Authorize or revoke agents through the contract owner.
 - Configure per-agent spending limits.
-- Read authorization and spending-limit state directly from NEAR.
-- Keep agent permissions separate from finance approval authority.
-- Monitor agent accounts and business activity.
+- Read authorization and spending-limit state from NEAR.
+- Separate agent permissions from finance approval authority.
 
-The contract enforces role boundaries: the owner and finance approvers cannot simultaneously hold agent permissions.
-
-### 2. On-Chain Treasury
-
-Manage enterprise procurement funds through the NEAR smart contract.
+### On-Chain Treasury
 
 - Deposit NEAR into the enterprise treasury.
-- Query available treasury funds from the contract.
-- Create supplier escrows using real wallet-signed transactions.
+- Query available treasury funds.
+- Create supplier escrows using authorized transactions.
 - Enforce available-balance and authorization checks.
 - Track escrow amounts and settlement states.
 
-### 3. Orders and Escrow
+### Orders and Escrow
 
-Create and monitor business orders backed by on-chain escrow.
-
-The contract supports the following lifecycle:
-
-1. An authorized agent creates an order and specifies its supplier and payment amount.
+1. An authorized agent creates an order.
 2. The contract validates permissions, spending limits, and available funds.
 3. Funds are locked in escrow.
-4. The supplier submits delivery evidence and its SHA-256 hash.
-5. An authorized finance approver independently verifies the submitted hash.
-6. Finance initiates the release.
-7. The contract executes the supplier payment and processes the release callback.
-8. The order state is updated according to the settlement result.
+4. The supplier submits delivery information and its SHA-256 hash.
+5. Finance independently verifies the delivery hash.
+6. Finance approves the delivery.
+7. Finance initiates payment release.
+8. The contract processes settlement and updates the order state.
 
 The contract also supports refunds for eligible orders.
 
-### 4. Supplier Portal
-
-Suppliers can participate in the order fulfillment workflow.
+### Supplier Portal
 
 - View relevant orders.
 - Submit delivery information.
@@ -67,47 +88,36 @@ Suppliers can participate in the order fulfillment workflow.
 
 Delivery submission is restricted to the supplier assigned to the order.
 
-### 5. Independent Finance Approval
+### Independent Finance Approval
 
-Financial approval is separated from agent execution.
+- Owner-controlled finance approver allowlist.
+- Independent delivery verification.
+- Contract-enforced finance authorization.
+- Separation between agent execution and financial approval.
+- Protection against unauthorized approval and release.
 
-- The contract owner manages the finance approver allowlist.
-- Finance approvers independently verify delivery hashes.
-- Suppliers cannot approve their own deliveries.
-- Agents cannot approve their own orders.
-- The contract checks finance authorization when approving and releasing funds.
-- Revoked approvers cannot continue exercising finance privileges.
+### Settlement Reconciliation
 
-This separation reduces the risk of a single agent controlling both procurement and payment approval.
+NEAR settlement involves asynchronous cross-account transfers and callbacks.
 
-### 6. Settlement Reconciliation
+AgentBiz OS includes:
 
-NEAR contract settlement involves asynchronous cross-account transfers and callbacks.
+- Release-attempt tracking.
+- Asynchronous payment callbacks.
+- Escrow state protection when settlement cannot be confirmed.
+- Independent finance reconciliation.
+- Distinct authorized approvers for two-party reconciliation.
+- Protection against stale callbacks and duplicate reconciliation attempts.
 
-AgentBiz OS includes contract-level release-attempt tracking and independent reconciliation logic.
-
-- Track individual release attempts.
-- Process asynchronous payment callbacks.
-- Preserve escrow state when settlement cannot be confirmed.
-- Support independent finance reconciliation.
-- Require distinct authorized approvers for the two-party reconciliation process.
-- Prevent stale callbacks and duplicate reconciliation attempts from incorrectly finalizing an order.
-
-### 7. Business Dashboard and Chain Data
-
-The dashboard brings business operations and finalized contract data together.
+### Business Dashboard
 
 - Business overview and active orders.
-- Agent registry and on-chain permissions.
+- Agent registry and permissions.
 - Treasury information.
 - Order and escrow status.
 - Supplier delivery information.
 - Finance approval and release operations.
 - Transaction references and chain audit information.
-
-The server reads contract state and synchronizes order information using NEAR chain data. Database records and finalized on-chain state are represented separately so that application indexing is not confused with contract execution.
-
----
 
 ## Application Modules
 
@@ -116,16 +126,12 @@ The server reads contract state and synchronizes order information using NEAR ch
 | Dashboard | Business overview, treasury and order activity |
 | AI Agents | Agent registry, authorization and spending limits |
 | Orders | On-chain orders and escrow lifecycle |
-| Supplier Portal | Delivery submission and order fulfillment |
-| Finance Desk | Delivery verification, approval and fund release |
-
----
+| Supplier Portal | Delivery submission and fulfillment |
+| Finance Desk | Delivery verification, approval and release |
 
 ## Smart Contract
 
 The Rust smart contract is located in `contract/`.
-
-Key operations include:
 
 | Method | Description |
 |---|---|
@@ -136,15 +142,11 @@ Key operations include:
 | `release` | Initiate escrow settlement |
 | `refund` | Refund an eligible escrow |
 | `set_agent` | Manage agent authorization |
-| `set_finance_approver` | Manage independent finance approvers |
+| `set_finance_approver` | Manage finance approvers |
 | `reconcile_release` | Reconcile an asynchronous release outcome |
 | `get_agent_limit` | Read an agent's spending limit |
 | `get_escrow` | Read escrow details |
 | `get_treasury_available` | Read available treasury funds |
-
-The contract enforces authorization, role separation, spending limits, escrow state transitions, delivery verification, and settlement rules.
-
----
 
 ## Technology Stack
 
@@ -155,10 +157,8 @@ The contract enforces authorization, role separation, spending limits, escrow st
 - **Smart Contract:** Rust, NEAR SDK
 - **Wallet Integration:** HOT Labs NEAR Connect
 - **Chain Data:** NEAR RPC and FastNEAR indexing
-- **Verification:** SHA-256 delivery hashes
+- **Verification:** SHA-256
 - **Testing:** TypeScript application tests and Rust contract sandbox tests
-
----
 
 ## Repository Structure
 
@@ -179,62 +179,36 @@ agentbiz-os/
 └── README.md
 ```
 
----
-
 ## Running Locally
 
-### Requirements
+Requirements:
 
 - Node.js 22+
 - npm
 - PostgreSQL
-- NEAR Testnet wallet for on-chain operations
+- NEAR Testnet wallet/account for operations requiring transaction signatures
 
-### Install dependencies
+Install dependencies:
 
 ```bash
 npm ci
 ```
 
-### Configure environment
+Configure the local `.env` file using `.env.example` as a reference. Never commit private keys, wallet credentials, database passwords, or production secrets.
 
-Create a local `.env` file using `.env.example` as a reference.
-
-Configure the PostgreSQL connection and the application settings required by your environment.
-
-Never commit private keys, wallet credentials, database passwords, or production secrets.
-
-### Run the application
+Run the application:
 
 ```bash
 npm run dev
 ```
 
-Open the local development URL printed by the application.
-
-### Quality checks
+Quality checks:
 
 ```bash
 npm run lint
 npm run typecheck
 npm test
 ```
-
----
-
-## NEAR Testnet
-
-AgentBiz OS is deployed on NEAR Testnet.
-
-- **Contract:** `agentbiz.stormxu.testnet`
-- **Network:** NEAR Testnet
-- **Contract explorer:** https://testnet.nearblocks.io/address/agentbiz.stormxu.testnet
-
-Use a NEAR Testnet-compatible wallet and testnet funds to perform operations requiring transaction signatures.
-
-All blockchain transactions require wallet authorization. The application does not treat a locally generated transaction identifier as proof of an on-chain transaction.
-
----
 
 ## Security Model
 
@@ -252,11 +226,9 @@ Key security boundaries include:
 - Asynchronous settlement callback protection.
 - Release-attempt tracking and independent reconciliation.
 
-The smart contract is the authority for on-chain permissions and settlement outcomes.
+The smart contract is the authority for on-chain permissions and settlement outcomes. Selecting a business role in the application does not itself authorize a blockchain transaction.
 
----
-
-## Project Scope
+## Project Scope and Limitations
 
 AgentBiz OS demonstrates a controlled multi-agent business operating environment with real NEAR Testnet contract interactions.
 
@@ -264,17 +236,12 @@ It combines business application workflows, role-based permissions, treasury man
 
 The current implementation is a testnet-stage project. It is not presented as a production-ready financial service, an unrestricted autonomous agent marketplace, or a production mainnet payment network.
 
----
-
 ## Hackathon Focus
 
-**Agents:** Coordinated business agents with explicit permissions and spending limits.
-
-**Business:** An integrated operating environment for orders, suppliers, treasury, and finance.
-
-**Security:** Contract-enforced authorization, independent approval, escrow protection, delivery verification, and settlement reconciliation.
-
-**Blockchain:** Real NEAR Testnet transactions and verifiable smart-contract execution.
+- **Agents:** Coordinated business agents with explicit permissions and spending limits.
+- **Business:** An integrated operating environment for orders, suppliers, treasury, and finance.
+- **Security:** Contract-enforced authorization, independent approval, escrow protection, delivery verification, and settlement reconciliation.
+- **Blockchain:** Real NEAR Testnet transactions with independently verifiable smart-contract execution.
 
 ---
 
