@@ -155,7 +155,10 @@ function main(argv) {
     console.error("usage: node scripts/with-app-env.mjs <command> [args…]");
     process.exit(2);
   }
-  const env = buildChildEnv(projectRoot(), process.env);
+  const root = projectRoot();
+  const env = buildChildEnv(root, process.env);
+  const binPath = join(root, "node_modules", ".bin");
+  env.PATH = `${binPath}${process.platform === "win32" ? ";" : ":"}${env.PATH || ""}`;
   const child = spawn(command, args, { stdio: "inherit", env });
   // The dev server is long-running and is stopped by signalling this wrapper.
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
