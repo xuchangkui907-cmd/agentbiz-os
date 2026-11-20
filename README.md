@@ -1,5 +1,7 @@
 # AgentBiz OS
 
+My Email:   xuchangkui907@gmail.com
+
 **Multi-Agent Autonomous Business Operating System**
 
 **Let AI Run the Business. Let NEAR Govern the Money.**
@@ -246,3 +248,5 @@ The current implementation is a testnet-stage project. It is not presented as a 
 ---
 
 **AgentBiz OS — Autonomous Business. Verifiable Finance.**
+
+My Email:   xuchangkui907@gmail.com
